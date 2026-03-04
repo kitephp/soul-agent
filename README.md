@@ -1,5 +1,7 @@
 # soul-agent
 
+[English](README.md) | [中文](README_CN.md)
+
 Make your agent not just "respond to you," but "live beside you."
 
 `soul-agent` is an OpenClaw-oriented soul runtime skill package.  

@@ -1,5 +1,7 @@
 # soul-agent
 
+[中文](README_CN.md) | [English](README.md)
+
 让 Agent 不只是“回答你”，而是“活在你身边”。
 
 `soul-agent` 是一个面向 OpenClaw 的灵魂运行时技能包。  
