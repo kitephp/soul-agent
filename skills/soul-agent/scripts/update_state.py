@@ -111,15 +111,25 @@ def update_after_interaction(
                 recent.insert(0, topic)
         rel["recentTopics"] = recent[:10]  # 保留最近 10 个
     
-    # 更新关系阶段
-    stages = [
-        ("stranger", 0, 20),
-        ("acquaintance", 21, 40),
-        ("friend", 41, 60),
-        ("close", 61, 80),
-        ("intimate", 81, 100)
-    ]
-    for stage, low, high in stages:
+    # 更新关系阶段（从 relationship_rules.json 读取，保持单一来源）
+    rel_rules_path = Path(__file__).parent.parent / "assets/templates/heartbeat/relationship_rules.json"
+    stages_from_config = []
+    if rel_rules_path.exists():
+        try:
+            rules = json.loads(rel_rules_path.read_text(encoding="utf-8"))
+            for stage_name, info in rules.get("stages", {}).items():
+                sr = info.get("scoreRange", [0, 20])
+                if len(sr) == 2:
+                    stages_from_config.append((stage_name, sr[0], sr[1]))
+        except Exception:
+            pass
+    if not stages_from_config:
+        # 硬编码降级，与 relationship_rules.json 保持一致
+        stages_from_config = [
+            ("stranger", 0, 20), ("acquaintance", 21, 40), ("friend", 41, 60),
+            ("close", 61, 80), ("intimate", 81, 100),
+        ]
+    for stage, low, high in stages_from_config:
         if low <= rel["score"] <= high:
             rel["stage"] = stage
             break

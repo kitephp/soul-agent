@@ -19,6 +19,39 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 
+def _read_sleep_schedule(workspace: Path, state: dict) -> tuple[str, str]:
+    """从 life_profiles 读取睡眠时间，state 里没有这个字段。"""
+    profile_id = state.get("lifeProfile", "freelancer")
+    skill_root = Path(__file__).parent.parent
+
+    for base in [
+        skill_root / f"assets/templates/life_profiles/{profile_id}.json",
+        workspace / f"assets/templates/life_profiles/{profile_id}.json",
+    ]:
+        if base.exists():
+            try:
+                lp = json.loads(base.read_text(encoding="utf-8"))
+                sched = lp.get("schedule", {})
+                return sched.get("sleepStart", "01:00"), sched.get("sleepEnd", "07:00")
+            except Exception:
+                pass
+
+    # 也尝试从 agent profile 读（init_soul 写入的 sleep_start/sleep_end）
+    for profile_path in [
+        workspace / "soul" / "profile" / "base.json",
+        skill_root / "assets" / "default-profile.json",
+    ]:
+        if profile_path.exists():
+            try:
+                p = json.loads(profile_path.read_text(encoding="utf-8"))
+                if "sleep_start" in p:
+                    return p["sleep_start"], p.get("sleep_end", "07:00")
+            except Exception:
+                pass
+
+    return "01:00", "07:00"
+
+
 def check_heartbeat(workspace: str) -> tuple[int, str]:
     """检查是否需要心跳"""
     workspace = Path(workspace)
@@ -26,20 +59,25 @@ def check_heartbeat(workspace: str) -> tuple[int, str]:
     
     if not state_file.exists():
         return 0, "No state file, need initialization"
-    
-    state = json.loads(state_file.read_text(encoding="utf-8"))
-    
+
+    try:
+        state = json.loads(state_file.read_text(encoding="utf-8"))
+    except Exception:
+        return 0, "Corrupt state file, need heartbeat"
+
     # 1. 检查睡眠时间
     now = datetime.now().astimezone()
     current_minutes = now.hour * 60 + now.minute
+
+    # 从生活模板读取睡眠时间（state 里没有，需要去 life_profiles 找）
+    sleep_start, sleep_end = _read_sleep_schedule(workspace, state)
+
     
-    # 从 state 获取睡眠时间，默认 01:00-07:00
-    schedule = state.get("schedule", {})
-    sleep_start = schedule.get("sleepStart", "01:00")
-    sleep_end = schedule.get("sleepEnd", "07:00")
-    
-    start_h, start_m = map(int, sleep_start.split(":"))
-    end_h, end_m = map(int, sleep_end.split(":"))
+    try:
+        start_h, start_m = map(int, sleep_start.split(":"))
+        end_h, end_m = map(int, sleep_end.split(":"))
+    except Exception:
+        start_h, start_m, end_h, end_m = 1, 0, 7, 0
     
     start_minutes = start_h * 60 + start_m
     end_minutes = end_h * 60 + end_m

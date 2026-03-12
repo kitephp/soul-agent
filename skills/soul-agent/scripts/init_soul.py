@@ -194,11 +194,33 @@ def ask_user_profile(defaults: Dict[str, str]) -> Dict[str, str]:
         default_val = defaults.get(key, "")
         raw = input(f"  {key} [{default_val}]: ").strip()
         result[key] = raw if raw else default_val
-    
+
+    # 8. LLM 模型选择（用于心跳叙事和每日计划生成）
+    print("\n【LLM 模型】（用于心跳叙事和每日计划生成）")
+    print("  模型决定日记生成质量和 token 消耗：")
+    print("  [1] claude-haiku-4-5-20251001  - 快速便宜，高频心跳首选（推荐）")
+    print("  [2] claude-sonnet-4-6          - 质量更高，消耗约 5x")
+    print("  [3] claude-opus-4-6            - 最高质量，消耗约 15x")
+    print("  [留空] 不配置（默认 haiku）")
+
+    model_map = {
+        "1": "claude-haiku-4-5-20251001",
+        "2": "claude-sonnet-4-6",
+        "3": "claude-opus-4-6",
+    }
+
+    model_choice = input("  选择 [1-3 或留空]: ").strip()
+    if model_choice in model_map:
+        result["llm_model"] = model_map[model_choice]
+        print(f"  已选择: {result['llm_model']}")
+    else:
+        result["llm_model"] = ""
+        print("  使用默认: claude-haiku-4-5-20251001")
+
     print("\n" + "=" * 50)
     print("✅ 配置完成！")
     print("=" * 50 + "\n")
-    
+
     return result
 
 
@@ -367,6 +389,22 @@ def build_soul_files(
             stats,
         )
 
+    # 同时写 base.json：供 heartbeat_engine、plan_generator、llm_client 读取
+    # （base.md 是给 agent 读的，base.json 是给 Python 脚本读的）
+    base_json_keys = [
+        "agent_name", "display_name", "age", "city", "timezone",
+        "vibe", "emoji", "tone_style", "relationship_goal",
+        "life_profile", "occupation", "education", "hobbies",
+        "sleep_start", "sleep_end", "llm_model",
+    ]
+    base_json_data = {k: profile.get(k, "") for k in base_json_keys}
+    write_with_policy(
+        profile_dir / "base.json",
+        json.dumps(base_json_data, ensure_ascii=False, indent=2),
+        overwrite_existing,
+        stats,
+    )
+
     now_iso = datetime.now().astimezone().isoformat(timespec="seconds")
     
     # 根据生活模板获取睡眠时间
@@ -384,6 +422,7 @@ def build_soul_files(
         "agent": profile["agent_name"].lower(),
         "timezone": profile["timezone"],
         "lastUpdated": now_iso,
+        "lastHeartbeatAt": None,   # set on first heartbeat
         "location": "home",
         "activity": "idle",
         "energy": 70,
@@ -436,23 +475,37 @@ def sync_openclaw_files(workspace: Path) -> None:
 Runtime should read workspace `soul/` first:
 `soul/INDEX.md` -> `soul/profile/*` -> `soul/state/state.json`.
 Default scope is `main`; subagents are opt-in and must be enabled by the user.
-If `soul/` is missing, use a minimal companion baseline and prompt to run `$soul-agent` initialization.
+
+**Initialization check** (run on every session start):
+- If `soul/profile/base.json` is missing or `soul/` does not exist:
+  - Ask the user the setup questions (name, age, city, occupation, hobbies, life profile, preferred LLM model)
+  - Run init script non-interactively with collected answers (see soul-agent SKILL.md for exact command)
+  - Do NOT ask the user to run Python commands themselves
+- If `soul/profile/base.json` exists: load it and proceed normally
 """
     heartbeat_block = """
-This block is intended for `main` during heartbeat polls by default.
-Heartbeat must read:
-- `soul/state/state.json`
-- `soul/profile/life.md`
-- `soul/profile/schedule.md`
+This block is for `main` during heartbeat polls.
 
-If no actionable item exists, return `HEARTBEAT_OK`.
+**Heartbeat flow:**
+1. Run L1 check (no LLM): `python skills/soul-agent/scripts/heartbeat_check.py --workspace . --json`
+   - Exit 1 → sleeping, skip
+   - Exit 2 → state fresh, skip
+   - Exit 0 → run L2
+2. Run L2 engine: `python skills/soul-agent/scripts/heartbeat_engine.py --workspace . --json`
+3. Read result JSON:
+   - `shouldOutreach: true` → send the `outreachContent` message to user
+   - Otherwise → `HEARTBEAT_OK`
+
+**Initialization check** (before heartbeat):
+- If `soul/profile/base.json` missing → guide user through setup (do not run Python directly)
 """
     agents_block = """
 `soul-agent` runtime contract (default: `main`):
-1. Follow OpenClaw's default bootstrap order for root files (including `SOUL.md` and `HEARTBEAT.md`).
-2. Inside SOUL logic, load `soul/INDEX.md` and `soul/profile/*`.
-3. During heartbeat polls, read `soul/state/state.json` and cadence rules.
-4. Subagents are not enabled by default; user must opt in manually.
+1. Follow OpenClaw's default bootstrap order for root files (SOUL.md, HEARTBEAT.md).
+2. Load `soul/INDEX.md` → `soul/profile/*` → `soul/state/state.json`.
+3. During heartbeat polls, follow the flow in HEARTBEAT.md.
+4. Agent drives initialization — never ask the user to run Python commands.
+5. Subagents are not enabled by default; user must opt in.
 """
 
     upsert_managed_block(soul_md, SOUL_MARK_START, SOUL_MARK_END, soul_block)

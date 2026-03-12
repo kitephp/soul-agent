@@ -13,5 +13,6 @@
   "education": "",
   "hobbies": "",
   "sleep_start": "01:00",
-  "sleep_end": "07:00"
+  "sleep_end": "07:00",
+  "llm_model": ""
 }

@@ -4,12 +4,14 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 
 REQUIRED_PATHS = [
     "soul/INDEX.md",
     "soul/profile/base.md",
+    "soul/profile/base.json",      # 供 Python 脚本读取的结构化配置
     "soul/profile/life.md",
     "soul/profile/personality.md",
     "soul/profile/tone.md",
@@ -20,6 +22,11 @@ REQUIRED_PATHS = [
     "soul/state/state.json",
     "soul/log/warnings.log",
     "soul/log/sync.log",
+]
+
+RECOMMENDED_PATHS = [
+    "soul/plan",      # daily plan 目录（首次心跳后自动创建）
+    "soul/memory",    # 记忆蒸馏目录
 ]
 
 BLOCK_RULES = {
@@ -53,6 +60,42 @@ def check_paths(workspace: Path) -> int:
             print(f"- {rel}")
         return 1
     print("Soul file structure: PASS")
+
+    # 建议存在但不强制
+    missing_recommended = [r for r in RECOMMENDED_PATHS if not (workspace / r).exists()]
+    if missing_recommended:
+        print("Note (non-critical, created automatically on first heartbeat):")
+        for rel in missing_recommended:
+            print(f"  - {rel}")
+    return 0
+
+
+def check_base_json(workspace: Path) -> int:
+    """验证 base.json 内容是否合理"""
+    base_json = workspace / "soul" / "profile" / "base.json"
+    if not base_json.exists():
+        # check_paths already reports this
+        return 1
+    try:
+        data = json.loads(base_json.read_text(encoding="utf-8"))
+    except Exception as e:
+        print(f"base.json parse error: {e}")
+        return 1
+
+    issues = []
+    if not data.get("display_name"):
+        issues.append("display_name is empty — agent name not configured")
+    if not data.get("city"):
+        issues.append("city is empty — location not configured")
+    if not data.get("llm_model"):
+        issues.append("llm_model is empty — will use default haiku (OK if intentional)")
+
+    if issues:
+        print("base.json config notes:")
+        for i in issues:
+            print(f"  - {i}")
+    else:
+        print("base.json config: PASS")
     return 0
 
 
@@ -134,6 +177,7 @@ def main() -> int:
     workspace = Path(args.workspace).resolve()
     code = 0
     code |= check_paths(workspace)
+    code |= check_base_json(workspace)
     code |= check_blocks(workspace)
     code |= check_legacy_and_references(workspace)
     code |= check_main_scope_hints(workspace)
@@ -141,7 +185,7 @@ def main() -> int:
         print("soul-agent diagnosis: PASS")
     else:
         print("soul-agent diagnosis: FAIL")
-        print("Run `$soul-agent` init/repair flow (use migrate mode if needed).")
+        print("Ask Claude to run soul-agent initialization (say: '帮我初始化 soul-agent').")
     return 1 if code else 0
 
 

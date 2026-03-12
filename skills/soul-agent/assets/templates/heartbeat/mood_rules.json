@@ -7,7 +7,7 @@
       "energyRecovery": 1.2
     },
     "neutral": {
-      "moods": ["calm", "neutral", "focused", "thoughtful", "indifferent"],
+      "moods": ["calm", "neutral", "focused", "thoughtful", "indifferent", "concerned"],
       "energyRecovery": 1.0
     },
     "negative": {
@@ -108,6 +108,7 @@
     "sad": "难过，心情低落",
     "lonely": "有点孤独，想找人说话",
     "stressed": "压力大，神经紧绷",
-    "rested": "休息好了，精神饱满"
+    "rested": "休息好了，精神饱满",
+    "concerned": "有点担心，心里惦记着什么"
   }
 }
