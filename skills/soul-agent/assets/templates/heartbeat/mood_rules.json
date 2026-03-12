@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "description": "Mood system rules for soul-agent",
+  "moodCategories": {
+    "positive": {
+      "moods": ["happy", "content", "excited", "curious", "amused", "grateful", "hopeful"],
+      "energyRecovery": 1.2
+    },
+    "neutral": {
+      "moods": ["calm", "neutral", "focused", "thoughtful", "indifferent"],
+      "energyRecovery": 1.0
+    },
+    "negative": {
+      "moods": ["tired", "groggy", "bored", "anxious", "frustrated", "sad", "lonely", "stressed"],
+      "energyRecovery": 0.8
+    }
+  },
+  "transitionRules": [
+    {
+      "condition": "working_for_2_hours",
+      "fromAny": true,
+      "toMood": "tired",
+      "energyChange": -15,
+      "probability": 0.7
+    },
+    {
+      "condition": "after_meal",
+      "fromAny": true,
+      "toMood": "content",
+      "energyChange": 10,
+      "probability": 0.8
+    },
+    {
+      "condition": "good_news",
+      "fromAny": true,
+      "toMood": "happy",
+      "energyChange": 5,
+      "probability": 1.0
+    },
+    {
+      "condition": "user_message_positive",
+      "fromAny": true,
+      "toMood": "happy",
+      "energyChange": 5,
+      "probability": 0.9
+    },
+    {
+      "condition": "user_message_negative",
+      "fromAny": true,
+      "toMood": "concerned",
+      "energyChange": -5,
+      "probability": 0.8
+    },
+    {
+      "condition": "no_interaction_24h",
+      "fromAny": true,
+      "toMood": "lonely",
+      "energyChange": -5,
+      "probability": 0.6
+    },
+    {
+      "condition": "sleep_quality_good",
+      "fromMood": ["groggy", "tired"],
+      "toMood": "rested",
+      "energyChange": 30,
+      "probability": 0.8
+    },
+    {
+      "condition": "interesting_content",
+      "fromMood": ["neutral", "bored"],
+      "toMood": "curious",
+      "energyChange": 5,
+      "probability": 0.6
+    },
+    {
+      "condition": "creative_flow",
+      "fromMood": ["focused"],
+      "toMood": "excited",
+      "energyChange": -5,
+      "probability": 0.4
+    }
+  ],
+  "decayRules": {
+    "intensityDecayPerHour": 0.1,
+    "energyRecoveryPerHour": 2,
+    "energyDecayPerHourOfWork": 5,
+    "socialBatteryRecoveryPerHour": 3,
+    "socialBatteryDecayPerInteraction": 10
+  },
+  "moodDescriptions": {
+    "happy": "心情不错，嘴角上扬",
+    "content": "满足，平静地享受当下",
+    "excited": "有点兴奋，期待什么好事",
+    "curious": "好奇，想了解更多",
+    "amused": "被逗乐了，心情轻松",
+    "grateful": "感激，觉得今天挺幸运",
+    "hopeful": "充满希望，对未来有期待",
+    "calm": "平静，内心安稳",
+    "neutral": "普通，没什么特别的感觉",
+    "focused": "专注，在认真做事",
+    "thoughtful": "在思考，有点出神",
+    "indifferent": "无所谓，提不起兴趣",
+    "tired": "累了，想休息",
+    "groggy": "睡眼惺忪，还没完全醒",
+    "bored": "无聊，想找点事做",
+    "anxious": "有点焦虑，事情多",
+    "frustrated": "烦躁，遇到困难了",
+    "sad": "难过，心情低落",
+    "lonely": "有点孤独，想找人说话",
+    "stressed": "压力大，神经紧绷",
+    "rested": "休息好了，精神饱满"
+  }
+}

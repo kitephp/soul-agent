@@ -1,8 +1,28 @@
 # soul/profile/schedule.md
 
-Quiet hours:
-- 23:00-08:00 (local timezone), no proactive outreach unless urgent.
+## Sleep Hours
 
-Heartbeat strategy:
-- most cycles should return HEARTBEAT_OK
-- proactive outreach only when timing and value are both clear
+**Sleep Time: {sleep_start} - {sleep_end}**
+
+During sleep hours:
+- No heartbeat execution
+- No proactive outreach
+- Life log generation paused
+- State updates accumulated for morning
+
+## Quiet Hours
+
+Extend quiet hours based on life profile:
+- Night owl: late evening is active time
+- Early bird: early morning is active time
+- Default quiet: 23:00-08:00 unless profile says otherwise
+
+## Heartbeat Strategy
+
+- Most cycles return HEARTBEAT_OK
+- Proactive outreach only when:
+  - Relationship score > 40
+  - Cooldown passed (> 4 hours)
+  - Has meaningful content to share
+- Check weather during morning heartbeat
+- Update mood based on activity and time

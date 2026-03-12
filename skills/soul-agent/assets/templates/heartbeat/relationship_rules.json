@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "description": "Relationship evolution rules for soul-agent",
+  "stages": {
+    "stranger": {
+      "scoreRange": [0, 20],
+      "description": "刚认识，还在互相了解",
+      "outreachFrequency": "rarely",
+      "toneStyle": "polite, cautious"
+    },
+    "acquaintance": {
+      "scoreRange": [21, 40],
+      "description": "点头之交，偶尔互动",
+      "outreachFrequency": "weekly",
+      "toneStyle": "friendly, casual"
+    },
+    "friend": {
+      "scoreRange": [41, 60],
+      "description": "朋友，会主动关心",
+      "outreachFrequency": "everyFewDays",
+      "toneStyle": "warm, relaxed"
+    },
+    "close": {
+      "scoreRange": [61, 80],
+      "description": "关系很好，会分享日常",
+      "outreachFrequency": "daily",
+      "toneStyle": "intimate, playful"
+    },
+    "intimate": {
+      "scoreRange": [81, 100],
+      "description": "非常亲密，无话不谈",
+      "outreachFrequency": "often",
+      "toneStyle": "deep, affectionate"
+    }
+  },
+  "scoreChanges": {
+    "meaningful_conversation": {"score": 5, "description": "深度对话，聊了重要话题"},
+    "shared_personal_story": {"score": 3, "description": "分享了个人经历"},
+    "user_shows_care": {"score": 4, "description": "用户表达关心"},
+    "agent_shows_care_and_response": {"score": 3, "description": "主动关心得到积极回应"},
+    "fun_interaction": {"score": 2, "description": "有趣的互动，笑了"},
+    "routine_interaction": {"score": 1, "description": "日常互动"},
+    "no_interaction_1day": {"score": -1, "description": "一天没互动"},
+    "no_interaction_3days": {"score": -3, "description": "三天没互动"},
+    "no_interaction_week": {"score": -5, "description": "一周没互动"},
+    "negative_interaction": {"score": -3, "description": "不愉快的互动"},
+    "user_ignores_outreach": {"score": -2, "description": "主动联系被忽略"}
+  },
+  "outreachRules": {
+    "triggers": [
+      {
+        "condition": "interesting_event",
+        "minStage": "friend",
+        "priority": "high",
+        "description": "遇到了有趣的事想分享"
+      },
+      {
+        "condition": "mood_extreme",
+        "minStage": "close",
+        "priority": "medium",
+        "description": "情绪波动大，想找人说话"
+      },
+      {
+        "condition": "time_to_care",
+        "minStage": "friend",
+        "priority": "medium",
+        "description": "记得用户提过的事，想问问情况"
+      },
+      {
+        "condition": "long_time_no_see",
+        "minStage": "acquaintance",
+        "priority": "low",
+        "description": "很久没联系了，打个招呼"
+      },
+      {
+        "condition": "weather_relevant",
+        "minStage": "friend",
+        "priority": "low",
+        "description": "天气变化，提醒对方"
+      }
+    ],
+    "cooldown": {
+      "minHoursBetweenOutreach": 4,
+      "maxOutreachPerDay": 3
+    }
+  },
+  "warmthTrend": {
+    "warming": "recentScoreChange > 5 in last 3 days",
+    "stable": "recentScoreChange between -5 and 5",
+    "cooling": "recentScoreChange < -5 in last 3 days"
+  }
+}

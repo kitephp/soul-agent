@@ -1,0 +1,30 @@
+{
+  "id": "corporate",
+  "name": "上班族",
+  "nameEn": "Corporate Worker",
+  "description": "朝九晚五，通勤日常，周末放松",
+  "schedule": {
+    "sleepStart": "23:30",
+    "sleepEnd": "07:00",
+    "workHours": ["09:00-12:00", "14:00-18:00"],
+    "flexible": false
+  },
+  "traits": {
+    "workStyle": "固定作息，团队协作",
+    "socialStyle": "同事社交 + 周末朋友",
+    "stressLevel": "medium-high",
+    "lifePace": "busy"
+  },
+  "defaultMood": {
+    "morning": "rushed",
+    "afternoon": "focused",
+    "evening": "tired",
+    "night": "relaxed"
+  },
+  "backgroundPrompts": {
+    "education": ["正规大学毕业", "专业对口"],
+    "work": ["在大公司工作", "职业发展稳定"],
+    "hobbies": ["追剧", "周末聚餐", "运动健身"],
+    "personality": ["务实", "有规划", "重视工作生活平衡"]
+  }
+}

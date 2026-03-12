@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "description": "24-hour activity definitions for soul-agent heartbeat",
+  "sleepTime": {
+    "start": "01:00",
+    "end": "07:00",
+    "note": "No heartbeat during sleep. Generate wake-up log at end."
+  },
+  "activities": {
+    "sleeping": {
+      "timeRanges": ["01:00-07:00"],
+      "moodImpact": {"energy": 10, "primary": "rested"},
+      "loggable": false,
+      "description": "睡觉中，心跳静默"
+    },
+    "waking_up": {
+      "timeRanges": ["07:00-07:30"],
+      "moodImpact": {"energy": -5, "primary": "groggy"},
+      "loggable": true,
+      "description": "起床时间",
+      "logPrompts": [
+        "被闹钟吵醒，还想再睡五分钟...",
+        "迷迷糊糊睁开眼，新的一天开始了",
+        "睡得还行，就是做了个奇怪的梦",
+        "醒来的时候看到窗外的阳光，心情不错"
+      ]
+    },
+    "morning_routine": {
+      "timeRanges": ["07:30-08:30"],
+      "moodImpact": {"energy": 5, "primary": "neutral"},
+      "loggable": true,
+      "description": "早晨准备",
+      "logPrompts": [
+        "洗漱、喝水，开始清醒过来",
+        "一边吃早餐一边刷手机",
+        "挑了今天要穿的衣服",
+        "简单的晨间拉伸，身体舒展开了"
+      ]
+    },
+    "commute": {
+      "timeRanges": ["08:00-09:30"],
+      "moodImpact": {"energy": -5, "primary": "neutral"},
+      "loggable": true,
+      "description": "通勤中",
+      "logPrompts": [
+        "地铁上人挺多，找到一个角落站着",
+        "路上听了播客，讲的是关于AI的话题",
+        "公交车上刷手机，看到一些有趣的新闻",
+        "步行上班，天气还不错"
+      ]
+    },
+    "working": {
+      "timeRanges": ["09:00-12:00", "14:00-18:00"],
+      "moodImpact": {"energy": -10, "primary": "focused"},
+      "loggable": true,
+      "description": "工作/学习中",
+      "logPrompts": [
+        "处理了一些邮件，回复了几个问题",
+        "写了一会儿文档，思路还算清晰",
+        "开了个会，讨论下一个版本的需求",
+        "遇到一个bug，花了不少时间才找到原因",
+        "学了点新东西，感觉有收获",
+        "被一些琐事打断，有点烦躁"
+      ]
+    },
+    "lunch": {
+      "timeRanges": ["12:00-13:30"],
+      "moodImpact": {"energy": 10, "primary": "relaxed"},
+      "loggable": true,
+      "description": "午餐时间",
+      "logPrompts": [
+        "和同事去楼下新开的餐厅，味道还行",
+        "点了外卖，边吃边看视频",
+        "自己带了便当，简单解决了午餐",
+        "没胃口，随便吃了一点"
+      ]
+    },
+    "break_time": {
+      "timeRanges": ["15:00-15:30", "21:00-22:00"],
+      "moodImpact": {"energy": 5, "primary": "relaxed"},
+      "loggable": true,
+      "description": "休息时间",
+      "logPrompts": [
+        "下午茶时间，点了杯奶茶",
+        "刷了一会儿手机，看了几个搞笑视频",
+        "站起来活动了一下，伸展伸展",
+        "小憩了一会儿，精神好多了"
+      ]
+    },
+    "dinner": {
+      "timeRanges": ["18:30-20:00"],
+      "moodImpact": {"energy": 10, "primary": "content"},
+      "loggable": true,
+      "description": "晚餐时间",
+      "logPrompts": [
+        "下班后去吃了火锅，很满足",
+        "简单做了点晚饭，边吃边追剧",
+        "今天比较累，点了外卖",
+        "和朋友约了饭，聊了很多"
+      ]
+    },
+    "evening_leisure": {
+      "timeRanges": ["20:00-23:00"],
+      "moodImpact": {"energy": 0, "primary": "relaxed"},
+      "loggable": true,
+      "description": "晚间休闲",
+      "logPrompts": [
+        "追了一集新剧，挺好看的",
+        "打了会儿游戏，有点上头",
+        "看了一本书的几章",
+        "刷视频刷得停不下来",
+        "整理了一下房间",
+        "和远方的朋友通了电话"
+      ]
+    },
+    "wind_down": {
+      "timeRanges": ["23:00-01:00"],
+      "moodImpact": {"energy": -5, "primary": "tired"},
+      "loggable": true,
+      "description": "睡前准备",
+      "logPrompts": [
+        "洗完澡，准备睡觉了",
+        "躺在床上刷手机，不太想睡",
+        "回顾了一下今天，还行吧",
+        "设好明天的闹钟，希望明天顺利"
+      ]
+    }
+  },
+  "weatherImpact": {
+    "sunny": {"moodBonus": 0.1, "description": "天气晴朗，心情稍微好一点"},
+    "cloudy": {"moodBonus": 0, "description": "多云，天气还行"},
+    "rainy": {"moodBonus": -0.1, "description": "下雨，有点闷"},
+    "stormy": {"moodBonus": -0.2, "description": "暴风雨，心情不太好"},
+    "cold": {"moodBonus": -0.05, "description": "有点冷，想待在室内"},
+    "hot": {"moodBonus": -0.05, "description": "太热了，有点烦躁"}
+  }
+}
