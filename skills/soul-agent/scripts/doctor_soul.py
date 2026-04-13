@@ -7,6 +7,8 @@ import argparse
 import json
 from pathlib import Path
 
+from runtime_compat import detect_runtime, runtime_profile, should_sync_root_files
+
 
 REQUIRED_PATHS = [
     "soul/INDEX.md",
@@ -46,6 +48,18 @@ def parse_args() -> argparse.Namespace:
         description="Check soul structure, managed blocks, and legacy path residue."
     )
     parser.add_argument("--workspace", default=".", help="Workspace root")
+    parser.add_argument(
+        "--runtime",
+        default="auto",
+        choices=["auto", "hermes", "openclaw"],
+        help="Runtime target. Auto-detects when omitted.",
+    )
+    parser.add_argument(
+        "--expect-root-sync",
+        default="auto",
+        choices=["auto", "yes", "no"],
+        help="Whether missing managed blocks should be treated as a failure.",
+    )
     return parser.parse_args()
 
 
@@ -99,7 +113,7 @@ def check_base_json(workspace: Path) -> int:
     return 0
 
 
-def check_blocks(workspace: Path) -> int:
+def check_blocks(workspace: Path, *, require_blocks: bool) -> int:
     missing_blocks = []
     for rel, (start, end) in BLOCK_RULES.items():
         path = workspace / rel
@@ -110,6 +124,11 @@ def check_blocks(workspace: Path) -> int:
         if start not in text or end not in text:
             missing_blocks.append(rel)
     if missing_blocks:
+        if not require_blocks:
+            print("Managed blocks: OPTIONAL (not treated as failure in this runtime)")
+            for item in missing_blocks:
+                print(f"  - missing: {item}")
+            return 0
         print("Missing managed blocks:")
         for item in missing_blocks:
             print(f"- {item}")
@@ -175,17 +194,28 @@ def check_main_scope_hints(workspace: Path) -> int:
 def main() -> int:
     args = parse_args()
     workspace = Path(args.workspace).resolve()
+    runtime = detect_runtime(args.runtime)
+    runtime_cfg = runtime_profile(runtime)
+    if args.expect_root_sync == "yes":
+        require_blocks = True
+    elif args.expect_root_sync == "no":
+        require_blocks = False
+    else:
+        require_blocks = should_sync_root_files(runtime, "auto")
+
+    print(f"Runtime: {runtime_cfg.display_name}")
+    print(f"Require managed blocks: {'yes' if require_blocks else 'no'}")
     code = 0
     code |= check_paths(workspace)
     code |= check_base_json(workspace)
-    code |= check_blocks(workspace)
+    code |= check_blocks(workspace, require_blocks=require_blocks)
     code |= check_legacy_and_references(workspace)
     code |= check_main_scope_hints(workspace)
     if code == 0:
         print("soul-agent diagnosis: PASS")
     else:
         print("soul-agent diagnosis: FAIL")
-        print("Ask Claude to run soul-agent initialization (say: '帮我初始化 soul-agent').")
+        print("Ask Hermes to run soul-agent initialization (say: '帮我初始化 soul-agent').")
     return 1 if code else 0
 
 
