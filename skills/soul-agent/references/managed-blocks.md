@@ -5,6 +5,11 @@
 - `HEARTBEAT.md`
 - `AGENTS.md`
 
+Runtime policy:
+
+- **Hermes**: root-file sync is optional and should usually stay off
+- **OpenClaw**: root-file sync is usually part of the bootstrap contract
+
 ## Block Markers
 
 ```
@@ -38,7 +43,7 @@ Runtime loading contract:
 Runtime should read workspace `soul/` first:
 `soul/INDEX.md` -> `soul/profile/*` -> `soul/state/state.json`.
 Default scope is `main`; subagents are opt-in and must be enabled by the user.
-If `soul/` is missing, use a minimal companion baseline and prompt to run `$soul-agent` initialization.
+If `soul/` is missing, use a minimal companion baseline and prompt to initialize `soul-agent`.
 ```
 
 ### HEARTBEAT.md
@@ -61,7 +66,7 @@ Runtime contract:
 
 ```
 `soul-agent` runtime contract (default: `main`):
-1. Follow OpenClaw's default bootstrap order for root files (including `SOUL.md` and `HEARTBEAT.md`).
+1. Follow Hermes's root context files (including `SOUL.md`, `AGENTS.md`, and `HEARTBEAT.md` during heartbeat runs).
 2. Inside SOUL logic, load `soul/INDEX.md` and `soul/profile/*`.
 3. During heartbeat polls, read `soul/state/state.json` and cadence rules.
 4. Subagents are not enabled by default; user must opt in manually.
@@ -73,7 +78,7 @@ Agent should load memory at appropriate times:
 
 | When | What to Read |
 |------|--------------|
-| Startup | `SOUL.md`, `USER.md` |
+| Startup | `SOUL.md` and runtime-specific memory files |
 | Heartbeat | `soul/state/state.json`, `soul/profile/schedule.md` |
 | Recalling | `soul/memory/SOUL_MEMORY.md` (distilled) |
 | Detail needed | `soul/log/life/YYYY-MM-DD.md` (raw) |

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Initialize, repair, and migrate OpenClaw soul runtime structure (soul-agent)."""
+"""Initialize, repair, and migrate a Hermes-compatible soul runtime structure."""
 
 from __future__ import annotations
 
@@ -9,6 +9,13 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List
+
+from runtime_compat import (
+    detect_runtime,
+    managed_block_templates,
+    runtime_profile,
+    should_sync_root_files,
+)
 
 
 SOUL_MARK_START = "<!-- SOUL-AGENT:SOUL-START -->"
@@ -82,6 +89,18 @@ def parse_args() -> argparse.Namespace:
         "--overwrite-existing",
         action="store_true",
         help="Allow overwriting existing profile/state files (default: fill missing only).",
+    )
+    parser.add_argument(
+        "--runtime",
+        default="auto",
+        choices=["auto", "hermes", "openclaw"],
+        help="Runtime target. Auto-detects when omitted.",
+    )
+    parser.add_argument(
+        "--sync-root-files",
+        default="auto",
+        choices=["auto", "always", "never"],
+        help="Whether to write managed blocks into SOUL.md / HEARTBEAT.md / AGENTS.md.",
     )
     return parser.parse_args()
 
@@ -395,7 +414,7 @@ def build_soul_files(
         "agent_name", "display_name", "age", "city", "timezone",
         "vibe", "emoji", "tone_style", "relationship_goal",
         "life_profile", "occupation", "education", "hobbies",
-        "sleep_start", "sleep_end", "llm_model",
+        "sleep_start", "sleep_end", "llm_model", "llm_provider",
     ]
     base_json_data = {k: profile.get(k, "") for k in base_json_keys}
     write_with_policy(
@@ -466,47 +485,11 @@ def build_soul_files(
     return stats
 
 
-def sync_openclaw_files(workspace: Path) -> None:
+def sync_runtime_files(workspace: Path, runtime: str) -> None:
     soul_md = workspace / "SOUL.md"
     heartbeat_md = workspace / "HEARTBEAT.md"
     agents_md = workspace / "AGENTS.md"
-
-    soul_block = """
-Runtime should read workspace `soul/` first:
-`soul/INDEX.md` -> `soul/profile/*` -> `soul/state/state.json`.
-Default scope is `main`; subagents are opt-in and must be enabled by the user.
-
-**Initialization check** (run on every session start):
-- If `soul/profile/base.json` is missing or `soul/` does not exist:
-  - Ask the user the setup questions (name, age, city, occupation, hobbies, life profile, preferred LLM model)
-  - Run init script non-interactively with collected answers (see soul-agent SKILL.md for exact command)
-  - Do NOT ask the user to run Python commands themselves
-- If `soul/profile/base.json` exists: load it and proceed normally
-"""
-    heartbeat_block = """
-This block is for `main` during heartbeat polls.
-
-**Heartbeat flow:**
-1. Run L1 check (no LLM): `python skills/soul-agent/scripts/heartbeat_check.py --workspace . --json`
-   - Exit 1 → sleeping, skip
-   - Exit 2 → state fresh, skip
-   - Exit 0 → run L2
-2. Run L2 engine: `python skills/soul-agent/scripts/heartbeat_engine.py --workspace . --json`
-3. Read result JSON:
-   - `shouldOutreach: true` → send the `outreachContent` message to user
-   - Otherwise → `HEARTBEAT_OK`
-
-**Initialization check** (before heartbeat):
-- If `soul/profile/base.json` missing → guide user through setup (do not run Python directly)
-"""
-    agents_block = """
-`soul-agent` runtime contract (default: `main`):
-1. Follow OpenClaw's default bootstrap order for root files (SOUL.md, HEARTBEAT.md).
-2. Load `soul/INDEX.md` → `soul/profile/*` → `soul/state/state.json`.
-3. During heartbeat polls, follow the flow in HEARTBEAT.md.
-4. Agent drives initialization — never ask the user to run Python commands.
-5. Subagents are not enabled by default; user must opt in.
-"""
+    soul_block, heartbeat_block, agents_block = managed_block_templates(runtime)
 
     upsert_managed_block(soul_md, SOUL_MARK_START, SOUL_MARK_END, soul_block)
     upsert_managed_block(
@@ -519,6 +502,9 @@ def main() -> int:
     args = parse_args()
     skill_root = Path(__file__).resolve().parents[1]
     workspace = Path(args.workspace).resolve()
+    runtime = detect_runtime(args.runtime)
+    runtime_cfg = runtime_profile(runtime)
+    sync_root_files = should_sync_root_files(runtime, args.sync_root_files)
     defaults = load_defaults(skill_root)
     ctx = Context(workspace=workspace, skill_root=skill_root, defaults=defaults)
 
@@ -536,6 +522,8 @@ def main() -> int:
         profile = merge_profile(merged, user_profile)
 
     print(f"Mode: {mode}")
+    print(f"Runtime: {runtime_cfg.display_name}")
+    print(f"Sync root files: {'yes' if sync_root_files else 'no'}")
     print_profile_delta(defaults, profile)
 
     warnings: List[str] = []
@@ -544,7 +532,13 @@ def main() -> int:
         migration_stats = migrate_legacy(workspace, args.overwrite_existing, warnings)
 
     stats = build_soul_files(ctx, profile, args.overwrite_existing, warnings)
-    sync_openclaw_files(workspace)
+    if sync_root_files:
+        sync_runtime_files(workspace, runtime)
+    else:
+        warnings.append(
+            f"[INFO] Root-file sync skipped for runtime={runtime}. "
+            "Hermes can attach soul-agent explicitly without touching SOUL.md / HEARTBEAT.md / AGENTS.md."
+        )
 
     print("soul-agent: init/sync completed.")
     print(f"Workspace: {workspace}")
